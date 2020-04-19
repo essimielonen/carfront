@@ -3,13 +3,15 @@ import ReactTable from 'react-table-v6';
 import 'react-table-v6/react-table.css';
 import Button from '@material-ui/core/Button';
 import Snackbar from '@material-ui/core/Snackbar';
-import Addcar from './Addcar'
+import Addcar from './Addcar';
+import Editcar from './Editcar';
 
 
 
 export default function Carlist () {
     const [cars, setCars] = useState([]);
     const [open, setOpen] = useState(false);
+    const [msg, setMsg] = useState('');
 
     useEffect(() => {
         getCars();
@@ -26,14 +28,28 @@ export default function Carlist () {
         if (window.confirm('Are you sure?')) {
         fetch(link, {method: 'DELETE'})
         .then(_ => getCars())
-        .then(_ => setOpen(true))
+        .then(_ => {
+            setMsg('Car deleted');
+            setOpen(true);
+        })
         .catch(err => console.error(err))
         }
     }
 
-    const handleClose = () => {
-        setOpen(false);
-    }
+    const updateCar = (link, car) => {
+        fetch(link, {
+          method: 'PUT',
+          headers: {
+            'Content-Type':'application/json'
+        },
+        body: JSON.stringify(car) 
+        })
+        .then(_ => getCars())
+        .then(_ => {
+            setMsg('Car updated');
+            setOpen(true);
+        })
+      }
 
     const addCar = (car) => {
         fetch('https://carstockrest.herokuapp.com/cars',
@@ -45,8 +61,16 @@ export default function Carlist () {
             body: JSON.stringify(car)
             }
         )
-        .then(_ => getCars)
+        .then(_ => getCars())
+        .then(_ => {
+            setMsg('New car added');
+            setOpen(true);
+        })
         .catch(err => console.error(err))
+    }
+
+    const handleClose = () => {
+        setOpen(false);
     }
     
     const columns = [ 
@@ -75,6 +99,9 @@ export default function Carlist () {
             accessor: 'price'
         },
         {
+            Cell: row => (<Editcar car={row.original} updateCar={updateCar} />)
+        },
+        {
             Cell: row => (<Button size="small" color="secondary" onClick={() => deleteCar(row.original._links.self.href)}>Delete</Button>)
         }
     ]
@@ -87,12 +114,11 @@ export default function Carlist () {
             open={open}
             autoHideDuration={4000}
             onClose={handleClose}
-            message={'Car deleted'} 
+            message={msg} 
             anchorOrigin={{
                 vertical: 'bottom',
                 horizontal: 'left'
             }}
-            
             />
         </div>
     );
